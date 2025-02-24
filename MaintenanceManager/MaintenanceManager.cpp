@@ -38,6 +38,7 @@
 #include <algorithm>
 #include <array>
 #include <unistd.h>
+#include <iostream>
 
 #include "MaintenanceManager.h"
 #include "UtilsIarm.h"
@@ -309,6 +310,7 @@ namespace WPEFramework
          */
         MaintenanceManager::MaintenanceManager():PluginHost::JSONRPC()
         {
+            std::cout << "akshay MaintenanceManager::MaintenanceManager() consturter" << std::endl;
             MaintenanceManager::_instance = this;
             if (Utils::directoryExists(MAINTENANCE_MGR_RECORD_FILE))
             {
@@ -355,6 +357,7 @@ namespace WPEFramework
 
         void MaintenanceManager::task_execution_thread()
         {
+            std::cout << "akshay inside task_execution_thread" << std::endl;
             int i = 0;
             string task = "";
             bool internetConnectStatus = false;
@@ -376,6 +379,7 @@ namespace WPEFramework
 
             if (!delayMaintenanceStarted)
             {
+                std::cout << "akshay inside delayMaintenanceStarted" << std::endl;
                 m_statusMutex.lock();
                 MaintenanceManager::_instance->onMaintenanceStatusChange(MAINTENANCE_STARTED);
                 m_statusMutex.unlock();
@@ -384,6 +388,7 @@ namespace WPEFramework
             /* cleanup tasks vector, if not empty */
             if (!tasks.empty())
             {
+                std::cout << "akshay inside tasks.empty()" << std::endl;
                 tasks.erase(tasks.begin(), tasks.end());
             }
 
@@ -408,6 +413,7 @@ namespace WPEFramework
 #if defined(ENABLE_WHOAMI)
             if (UNSOLICITED_MAINTENANCE == g_maintenance_type) /* Unsolicited Maintenance in WHOAMI */
             {
+                std::cout << "akshay inside UNSOLICITED_MAINTENANCE whoami" << std::endl;
                 string activation_status = checkActivatedStatus(); /* Device Activation Status Check */
                 bool whoAmIStatus = knowWhoAmI(activation_status); /* WhoAmI Response & Set Status Check */
                 LOGINFO("knowWhoAmI() returned %s", (whoAmIStatus) ? "successfully" : "false");
@@ -452,6 +458,7 @@ namespace WPEFramework
 
             if (delayMaintenanceStarted)
             {
+                std::cout << "akshay inside delayMaintenanceStarted" << std::endl;
                 m_statusMutex.lock();
                 MaintenanceManager::_instance->onMaintenanceStatusChange(MAINTENANCE_STARTED);
                 m_statusMutex.unlock();
@@ -762,10 +769,12 @@ namespace WPEFramework
          */
         bool MaintenanceManager::maintenance_createTimer()
         {
+            std::cout << "akshay Creating Timer" << std::endl;
             bool status = false;
             if (checkTaskTimerExists() || isTaskTimerRunning())
             {
                 LOGINFO("Timer is already created/ running. No need to create a new timer.");
+                std::cout << "akshay Timer is already created/ running. No need to create a new timer=."<< status << std::endl;
                 return status; // Timer Already Exist/ Timer Already running
             }
 
@@ -782,6 +791,7 @@ namespace WPEFramework
 
             LOGINFO("Timer created successfully.");
             status = true;
+            std::cout << "akshay Timer created successfully=."<< status << std::endl;
             return status; // Timer created successfully
         }
 
@@ -1523,6 +1533,7 @@ namespace WPEFramework
          */
         bool MaintenanceManager::subscribeToDeviceInitializationEvent()
         {
+            std::cout << "akshay inside subscribeToDeviceInitializationEvent" << std::endl;
             int32_t status = Core::ERROR_NONE;
             bool result = false;
             string event = "onDeviceInitializationContextUpdate";
@@ -1534,25 +1545,30 @@ namespace WPEFramework
 
             thunder_client = getThunderPluginHandle(secMgr_callsign_ver);
             if (thunder_client == nullptr)
-            {
+            {   
+                std::cout << "akshay inside subscribeToDeviceInitializationEvent thunder_client is null" << std::endl;
                 LOGINFO("Failed to get plugin handle");
             }
             else
             {
+                std::cout << "akshay inside subscribeToDeviceInitializationEvent thunder_client is not null else case" << std::endl;
                 status = thunder_client->Subscribe<JsonObject>(5000, event, &MaintenanceManager::deviceInitializationContextEventHandler, this);
                 if (status == Core::ERROR_NONE)
                 {
+                    std::cout << "akshay inside subscribeToDeviceInitializationEvent status is updating result to true" << std::endl;
                     result = true;
                 }
             }
             g_subscribed_for_deviceContextUpdate = result;
             if (g_subscribed_for_deviceContextUpdate)
             {
+                std::cout << "akshay inside subscribeToDeviceInitializationEvent g_subscribed_for_deviceContextUpdate is true" << std::endl;
                 LOGINFO("MaintenanceManager subscribed for %s event", event.c_str());
                 return true;
             }
             else
             {
+                std::cout << "akshay inside subscribeToDeviceInitializationEvent g_subscribed_for_deviceContextUpdate is false" << std::endl;
                 LOGINFO("Failed to subscribe for %s event", event.c_str());
                 return false;
             }
@@ -1565,6 +1581,7 @@ namespace WPEFramework
 
         const string MaintenanceManager::Initialize(PluginHost::IShell *service)
         {
+            std::cout << "akshay inside MaintenanceManager::Initialize" << std::endl;
             ASSERT(service != nullptr);
             ASSERT(m_service == nullptr);
 
@@ -1572,23 +1589,29 @@ namespace WPEFramework
             m_service->AddRef();
 
 #if defined(ENABLE_WHOAMI)
+            std::cout << "akshay whoami enabled for for function" << std::endl;
             subscribeToDeviceInitializationEvent();
+            std::cout << "akshay whoami enabled came from the fuction " << std::endl;
 #endif
 
 #if defined(USE_IARMBUS) || defined(USE_IARM_BUS)
+            std::cout << "akshay inside MaintenanceManager::Initialize USE_IARMBUS" << std::endl;
             InitializeIARM();
+            std::cout << "akshay inside MaintenanceManager::Initialize USE_IARMBUS came from the function" << std::endl;
 #endif
 
             // Register Signal Handler
             if (signal(SIGALRM, timer_handler) == SIG_ERR)
-            {
+            {   std::cout << "akshay inside MaintenanceManager::Initialize signal handler" << std::endl;
                 LOGERR("Failed to register signal handler");
                 return string("Failed to register signal handler");
+                std::cout << "akshay inside MaintenanceManager::Initialize signal handler came from the function" << std::endl;
             }
 
             if (!maintenance_createTimer())
             {
                 return string("Failed to create timer");
+                std::cout << "akshay inside MaintenanceManager::Initialize maintenance_createTimer" << std::endl;
             }
             /* On Success; return empty to indicate no error text. */
             return (string());
@@ -1614,12 +1637,13 @@ namespace WPEFramework
 #if defined(USE_IARMBUS) || defined(USE_IARM_BUS)
         void MaintenanceManager::InitializeIARM()
         {
+            std::cout << "akshay inside MaintenanceManager::InitializeIARM" << std::endl;
             if (Utils::IARM::init())
             {
                 IARM_Result_t res;
                 // Register for the Maintenance Notification Events
                 IARM_CHECK(IARM_Bus_RegisterEventHandler(IARM_BUS_MAINTENANCE_MGR_NAME, IARM_BUS_MAINTENANCEMGR_EVENT_UPDATE, _MaintenanceMgrEventHandler));
-
+                std::cout << "calling maintenanceManagerOnBootup" << std::endl;
                 maintenanceManagerOnBootup();
             }
         }
@@ -1627,6 +1651,7 @@ namespace WPEFramework
         void MaintenanceManager::maintenanceManagerOnBootup()
         {
             /* on boot up we set these things */
+            std::cout << "akshay inside MaintenanceManager::maintenanceManagerOnBootup" << std::endl;
             MaintenanceManager::g_currentMode = FOREGROUND_MODE;
 
             MaintenanceManager::m_notify_status = MAINTENANCE_IDLE;
@@ -1665,6 +1690,7 @@ namespace WPEFramework
             m_statusMutex.unlock();
 
             m_thread = std::thread(&MaintenanceManager::task_execution_thread, _instance);
+            std::cout << "akshay inside MaintenanceManager::maintenanceManagerOnBootup came from the function" << std::endl;
         }
 
         void MaintenanceManager::_MaintenanceMgrEventHandler(const char *owner, IARM_EventId_t eventId, void *data, size_t len)
